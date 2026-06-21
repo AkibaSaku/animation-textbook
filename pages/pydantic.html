@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pydantic · 動く解説</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;min-width:0}
+  html{overflow-x:hidden;width:100%}
+
+  /* ===== シェル共通 ===== */
+  body{background:#f5f6f8;color:#1d2330;font-family:'Inter','Hiragino Kaku Gothic ProN',sans-serif;line-height:1.75;width:100%;overflow-x:hidden;margin:0;}
+
+  .page{display:none;min-height:100vh;width:100%;max-width:960px;margin:0 auto;padding:clamp(18px,5vw,48px) clamp(14px,5vw,40px);}
+  .page.active{display:block;}
+
+  /* 戻るボタン（目次以外のページ用） */
+  .back-btn{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d6675;text-decoration:none;margin-bottom:22px;padding:6px 12px;border:1px solid #e6e9ee;border-radius:8px;background:#fff;cursor:pointer;transition:.14s;border:1px solid #e6e9ee;}
+  .back-btn:hover{color:#1d2330;border-color:#cfd4dd;}
+
+  /* ===== 目次ページ ===== */
+  #page-index .kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#6b7280;margin-bottom:10px;}
+  #page-index h1{font-size:clamp(28px,6.5vw,46px);font-weight:700;line-height:1.1;margin-bottom:8px;letter-spacing:-.02em;}
+  #page-index .lede{color:#5d6675;font-size:15px;max-width:60ch;margin-bottom:26px;}
+  #page-index .search{display:block;width:100%;background:#fff;border:2px solid #dfe3ea;color:#1d2330;font-family:'Inter',sans-serif;font-size:16px;padding:12px 16px;border-radius:12px;margin-bottom:10px;transition:.15s;}
+  #page-index .search::placeholder{color:#9aa3b2;}
+  #page-index .search:focus{outline:none;border-color:#1d2330;}
+  #page-index .count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9aa3b2;margin-bottom:28px;}
+  #page-index .cat{margin-bottom:30px;}
+  #page-index .cat-h{font-size:14px;font-weight:700;margin-bottom:13px;display:flex;align-items:center;gap:9px;color:#1d2330;}
+  #page-index .cat-h .pin{width:12px;height:12px;border-radius:3px;flex:0 0 auto;}
+  #page-index .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;width:100%;}
+  #page-index .card{display:block;background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:16px 17px;cursor:pointer;transition:.16s ease;min-width:0;max-width:100%;box-shadow:0 1px 3px rgba(20,30,50,.06);}
+  #page-index .card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(20,30,50,.12);border-color:#d2d7e0;}
+  #page-index .card.wip{opacity:.4;cursor:default;pointer-events:none;}
+  #page-index .card .ic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:16px;color:#fff;margin-bottom:11px;}
+  #page-index .card .en{font-size:15px;font-weight:600;margin-bottom:2px;display:block;color:#1d2330;letter-spacing:-.01em;overflow-wrap:break-word;}
+  #page-index .card .ja{font-size:12.5px;color:#5d6675;overflow-wrap:break-word;}
+  #page-index .card .wip-badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9aa3b2;border:1px solid #e6e9ee;border-radius:4px;padding:1px 6px;margin-top:4px;}
+  #page-index footer{margin-top:38px;font-size:11.5px;color:#9aa3b2;font-family:'IBM Plex Mono',monospace;border-top:1px solid #e6e9ee;padding-top:18px;}
+  @media(max-width:560px){#page-index .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;} #page-index .card{padding:13px;} #page-index .card .en{font-size:14px;} #page-index .card .ic{width:32px;height:32px;font-size:14px;}}
+  @media(max-width:380px){#page-index .grid{grid-template-columns:1fr;}}
+
+  /* ===== 個別ページ共通スタイル ===== */
+  .p-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;margin-bottom:10px;}
+  .p-h1{font-size:clamp(26px,6vw,42px);font-weight:700;line-height:1.14;letter-spacing:-.02em;}
+  .p-h1 .en{display:block;font-family:'IBM Plex Mono',monospace;font-size:.4em;color:#9aa3b2;font-weight:500;margin-top:8px;}
+  .p-lede{color:#5d6675;font-size:clamp(14px,2.2vw,16px);max-width:60ch;margin:16px 0 34px;}
+  .p-lede b{color:#1d2330;font-weight:600;}
+  .p-section{margin-bottom:40px;}
+  .p-h2{font-size:18px;font-weight:700;margin-bottom:6px;display:flex;gap:10px;align-items:baseline;letter-spacing:-.01em;}
+  .p-h2 .num{font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .p-h2+p{color:#5d6675;font-size:14px;margin-bottom:16px;}
+  .p-stage{background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:20px 16px 14px;overflow:hidden;}
+  .p-stage svg{display:block;width:100%;height:auto;overflow:visible;}
+  .p-controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:14px;}
+  .p-btn{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#1d2330;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;transition:.13s;}
+  .p-btn:hover{opacity:.85;transform:translateY(-1px);}
+  .p-btn.ghost{background:transparent;color:#1d2330;border:1px solid #e6e9ee;}
+  .p-btn.ghost:hover{border-color:#cfd4dd;}
+  .p-status{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9aa3b2;margin-left:auto;}
+  .p-note{border-left:3px solid currentColor;padding:6px 0 6px 15px;font-size:14px;margin-top:16px;color:#1d2330;}
+  .p-note b{font-weight:700;}
+  .p-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;}
+  @media(max-width:560px){.p-two{grid-template-columns:1fr;}}
+  .p-ccard{background:#fff;border:1px solid #e6e9ee;border-radius:10px;padding:15px;}
+  .p-ccard h3{font-family:'IBM Plex Mono',monospace;font-size:12.5px;margin-bottom:5px;}
+  .p-ccard p{font-size:13px;color:#5d6675;}
+  .p-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;margin-top:12px;color:#5d6675;}
+  .p-legend i{display:inline-block;width:20px;height:3px;vertical-align:middle;margin-right:5px;}
+  .p-panel{display:flex;flex-wrap:wrap;gap:8px;padding:14px;border-top:1px solid #e6e9ee;background:#fafbfc;align-items:center;}
+  .p-panel .lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9aa3b2;margin-right:2px;}
+  .p-sel{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#fff;color:#1d2330;border:1px solid #e6e9ee;padding:9px 13px;border-radius:8px;cursor:pointer;transition:.12s;}
+  .p-sel:hover{transform:translateY(-1px);}
+  .p-sel.chosen{font-weight:600;}
+  .p-verdict{font-family:'IBM Plex Mono',monospace;font-size:13px;padding:12px 16px;border-top:1px solid #e6e9ee;min-height:46px;color:#5d6675;}
+  .p-verdict b{color:#1d2330;}
+  .p-footer{margin-top:44px;font-size:11px;color:#9aa3b2;font-family:'IBM Plex Mono',monospace;border-top:1px solid #e6e9ee;padding-top:16px;}
+
+.page-nav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:22px}.page-nav .back-btn{margin-bottom:0}.nav-select{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d6675;background:#fff;border:1px solid #e6e9ee;border-radius:8px;padding:7px 12px;cursor:pointer;max-width:100%}.nav-select:hover{border-color:#cfd4dd;color:#1d2330}
+.xnav{max-width:960px;margin:56px auto 0;padding:26px clamp(14px,5vw,40px) 12px;border-top:1px solid #e6e9ee}.xnav-title{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#9aa3b2;margin-bottom:20px}.xnav-cat{margin-bottom:18px}.xnav-ch{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1d2330;margin-bottom:10px}.xnav-ch i{width:10px;height:10px;border-radius:3px;display:inline-block;flex:0 0 auto}.xnav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.xnav-card{display:block;background:#fff;border:1px solid #e6e9ee;border-radius:9px;padding:10px 12px;text-decoration:none;transition:.14s;min-width:0}.xnav-card:hover{border-color:#cfd4dd;transform:translateY(-2px);box-shadow:0 4px 12px rgba(20,30,50,.08)}.xnav-en{display:block;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:#1d2330;overflow-wrap:break-word}.xnav-ja{display:block;font-size:11.5px;color:#5d6675;margin-top:1px;overflow-wrap:break-word}.xnav-card.cur{background:#f0f3f8;border-color:#cfd4dd;pointer-events:none}.xnav-card.cur .xnav-en{color:#9aa3b2}</style>
+</head>
+<body>
+<div class="page active" id="page-pydantic">
+<div class="page-nav"><a class="back-btn" href="../index.html">← 目次</a><select class="nav-select" aria-label="他の解説へ移動" onchange="if(this.value)location.href=this.value"><optgroup label="データ・機械学習"><option value="dtw.html">DTW — 波形を伸縮させて重ねる</option><option value="dtree.html">Decision Tree — 質問で枝分かれする道</option><option value="forest.html">Random Forest — 木々の多数決</option></optgroup><optgroup label="Python・API"><option value="pydantic.html" selected>Pydantic — データの関所</option><option value="openapi.html">OpenAPI — APIのメニュー表</option><option value="uvicorn.html">uvicorn — ASGIの受付ホール</option></optgroup><optgroup label="通信プロトコル"><option value="soap.html">SOAP &amp; WSDL — XMLの郵便</option><option value="grpc.html">gRPC — 型付きの直通電話</option><option value="hls.html">HLS — 動画の細切れ出前</option></optgroup><optgroup label="ネットワーク"><option value="socket.html">Socket — 通信の土台・電話線</option><option value="websocket.html">WebSocket — 双方向ホットライン</option><option value="sse.html">SSE — 一方通行の実況中継</option><option value="webrtc.html">WebRTC — 仲介人とP2P直結</option><option value="cors.html">CORS — 他オリジンの出入国審査</option></optgroup></select></div>
+<p class="p-eyebrow" style="color:#11a06f">Python · Data Validation</p>
+<h1 class="p-h1">データの関所<span class="en">Pydantic</span></h1>
+<p class="p-lede">外から届くデータは形がバラバラで信用できません。Pydanticは<b>「こういう型のはず」という設計図</b>を関所に立て、届いたデータを検査します。直せるものは<b>正しい型に変換</b>し、ダメなものは<b>却下</b>。</p>
+<div class="p-section">
+  <h2 class="p-h2"><span class="num" style="color:#11a06f">01</span>関所に立てる設計図</h2>
+  <p>「ユーザーとは id(整数)・name(文字列)・age(整数) を持つもの」と宣言します。</p>
+  <div class="p-stage" style="padding:16px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;white-space:pre;overflow-x:auto;line-height:1.9"><span style="color:#e0606a">from</span> pydantic <span style="color:#e0606a">import</span> BaseModel
+
+<span style="color:#e0606a">class</span> <span style="color:#b5791a">User</span>(BaseModel):
+    <span style="color:#4f7cff">id</span>:   <span style="color:#11a06f">int</span>
+    <span style="color:#4f7cff">name</span>: <span style="color:#11a06f">str</span>
+    <span style="color:#4f7cff">age</span>:  <span style="color:#11a06f">int</span>     <span style="color:#9aa3b2"># 0以上のはず</span></div>
+</div>
+<div class="p-section">
+  <h2 class="p-h2"><span class="num" style="color:#11a06f">02</span>データを通してみる</h2>
+  <p>ボタンで色々なデータを関所に送ります。通過・変換・却下のどれになるか見てください。</p>
+  <div class="p-stage" style="padding:0">
+    <svg id="py-gate" viewBox="0 0 760 300"></svg>
+    <div class="p-panel" id="py-inputs"></div>
+    <div id="py-verdict" style="padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-top:1px solid #e6e9ee;min-height:54px;white-space:pre-wrap;color:#9aa3b2">// ボタンを押すとデータが関所に向かいます</div>
+  </div>
+  <div class="p-legend">
+    <span><i style="background:#11a06f;height:10px;width:10px;border-radius:2px"></i>通過</span>
+    <span><i style="background:#4f7cff;height:10px;width:10px;border-radius:2px"></i>変換して通す</span>
+    <span><i style="background:#e0606a;height:10px;width:10px;border-radius:2px"></i>却下</span>
+  </div>
+  <p class="p-note" style="color:#11a06f"><b>キモ：</b>"42"という文字列でidを送っても整数42に自動変換。"abc"は整数にできないので却下。</p>
+</div>
+<div class="p-section">
+  <h2 class="p-h2"><span class="num" style="color:#11a06f">03</span>なぜ嬉しいのか</h2>
+  <div class="p-two">
+    <div class="p-ccard"><h3 style="color:#11a06f">関所がない世界</h3><p>使う場所ごとに型確認だらけ。書き忘れた所でいつか落ちる。</p></div>
+    <div class="p-ccard"><h3 style="color:#11a06f">関所がある世界</h3><p>入口で一度検査済み。以降は型が保証され安心して書ける。</p></div>
+  </div>
+</div>
+<p class="p-footer">Pydantic interactive explainer · 関所メタファー</p>
+</div>
+<script>
+(function(){
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var NS='http://www.w3.org/2000/svg';
+  function el(t,a){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  var gate=document.getElementById('py-gate'),verdict=document.getElementById('py-verdict');
+  function scene(){gate.innerHTML='';gate.appendChild(el('line',{x1:0,y1:200,x2:760,y2:200,stroke:'#e6e9ee','stroke-width':1}));var lin=el('text',{x:20,y:34,fill:'#5d6675','font-family':'IBM Plex Mono','font-size':12});lin.textContent='受信データ →';gate.appendChild(lin);var lout=el('text',{x:600,y:34,fill:'#5d6675','font-family':'IBM Plex Mono','font-size':12});lout.textContent='検証済み ✓';gate.appendChild(lout);var gx=360;gate.appendChild(el('rect',{x:gx-6,y:80,width:12,height:130,fill:'#11a06f',rx:2}));gate.appendChild(el('rect',{x:gx+78,y:80,width:12,height:130,fill:'#11a06f',rx:2}));gate.appendChild(el('rect',{x:gx-14,y:70,width:112,height:14,fill:'#11a06f',rx:2}));var gl=el('text',{x:gx+42,y:62,fill:'#11a06f','font-family':'IBM Plex Mono','font-size':12,'text-anchor':'middle','font-weight':700});gl.textContent='User 関所';gate.appendChild(gl);gate.appendChild(el('rect',{x:gx,y:84,width:84,height:116,fill:'#11a06f',opacity:.12}));}
+  scene();
+  var GATE_MID=402;
+  function chip(text,color){var g=el('g',{opacity:0});var w=Math.max(64,text.length*8.4+22);g.appendChild(el('rect',{x:-w/2,y:-16,width:w,height:32,rx:6,fill:'#fff',stroke:color||'#5d6675','stroke-width':1.5}));var t=el('text',{x:0,y:5,fill:'#1d2330','font-family':'IBM Plex Mono','font-size':13,'text-anchor':'middle'});t.textContent=text;g.appendChild(t);gate.appendChild(g);return g;}
+  var busy=false;
+  function animateTo(g,fromX,toX,y,dur,cb){if(reduce){g.setAttribute('transform','translate('+toX+','+y+')');g.setAttribute('opacity',1);if(cb)cb();return;}var t0=performance.now();function step(now){var p=Math.min(1,(now-t0)/dur),e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;g.setAttribute('transform','translate('+(fromX+(toX-fromX)*e)+','+y+')');g.setAttribute('opacity',Math.min(1,p*3));if(p<1)requestAnimationFrame(step);else if(cb)cb();}requestAnimationFrame(step);}
+  var CASES={good:{chip:'{id:1,name,age:28}',type:'ok',msg:'✓ User(id=1, name=Bob, age=28)\n// すべて型どおり。そのまま通過。'},coerce:{chip:'{id:"42",...}',type:'coerce',msg:'→ "42"(str)を42(int)に変換\n✓ User(id=42,...)\n// 直せるので通す。'},bad_type:{chip:'{id:"abc",...}',type:'ng',msg:'✗ ValidationError\n  id: Input should be a valid integer\n// 却下。'},missing:{chip:'{id:1,name}',type:'ng',msg:'✗ ValidationError\n  age: Field required\n// 却下。'}};
+  function run(key){if(busy)return;busy=true;scene();var c=CASES[key],color=c.type==='ok'?'#11a06f':c.type==='coerce'?'#4f7cff':'#e0606a',g=chip(c.chip,'#5d6675');verdict.style.color='#9aa3b2';verdict.textContent='// データが関所に近づいています…';animateTo(g,70,GATE_MID,158,900,function(){flashGate(c.type,function(){if(c.type==='ng'){recolor(g,'#e0606a');animateTo(g,GATE_MID,130,158,700,function(){shake(g);verdict.style.color='#e0606a';verdict.textContent=c.msg;busy=false;});}else{recolor(g,color);animateTo(g,GATE_MID,690,158,900,function(){verdict.style.color='#11a06f';verdict.textContent=c.msg;busy=false;});}});});}
+  function recolor(g,color){var r=g.querySelector('rect');if(r){r.setAttribute('stroke',color);r.style.transition='stroke .3s';}}
+  function flashGate(type,cb){var color=type==='ng'?'#e0606a':type==='coerce'?'#4f7cff':'#11a06f',beam=el('rect',{x:360,y:84,width:84,height:116,fill:color,opacity:0});gate.appendChild(beam);if(reduce){cb();return;}var t0=performance.now();function step(now){var k=Math.min(1,(now-t0)/420);beam.setAttribute('opacity',Math.sin(k*Math.PI)*0.5);if(k<1)requestAnimationFrame(step);else{beam.remove();cb();}}requestAnimationFrame(step);}
+  function shake(g){if(reduce)return;var n=0,base=g.getAttribute('transform'),m=base.match(/translate\(([-\d.]+),([-\d.]+)\)/),bx=+m[1],by=+m[2],iv=setInterval(function(){g.setAttribute('transform','translate('+(bx+(n%2?5:-5))+','+by+')');if(++n>5){clearInterval(iv);g.setAttribute('transform','translate('+bx+','+by+')');}},55);}
+  var inputs=document.getElementById('py-inputs');
+  var BTN=[['good','✓ 正しいデータ'],['coerce','~ id を "42" で'],['bad_type','✗ id を "abc" で'],['missing','✗ age を忘れる']];
+  for(var i=0;i<BTN.length;i++){(function(k,lbl){var b=document.createElement('button');b.className='p-sel';b.textContent=lbl;b.onclick=function(){run(k);};inputs.appendChild(b);})(BTN[i][0],BTN[i][1]);}
+})();
+</script>
+<nav class="xnav" aria-label="ほかの解説（目次）"><div class="xnav-title">ほかの解説 · 目次</div><div class="xnav-cat"><div class="xnav-ch"><i style="background:#4f7cff"></i>データ・機械学習</div><div class="xnav-grid"><a class="xnav-card" href="dtw.html"><span class="xnav-en">DTW</span><span class="xnav-ja">波形を伸縮させて重ねる</span></a><a class="xnav-card" href="dtree.html"><span class="xnav-en">Decision Tree</span><span class="xnav-ja">質問で枝分かれする道</span></a><a class="xnav-card" href="forest.html"><span class="xnav-en">Random Forest</span><span class="xnav-ja">木々の多数決</span></a></div></div><div class="xnav-cat"><div class="xnav-ch"><i style="background:#11a06f"></i>Python・API</div><div class="xnav-grid"><span class="xnav-card cur" aria-current="page"><span class="xnav-en">Pydantic</span><span class="xnav-ja">データの関所</span></span><a class="xnav-card" href="openapi.html"><span class="xnav-en">OpenAPI</span><span class="xnav-ja">APIのメニュー表</span></a><a class="xnav-card" href="uvicorn.html"><span class="xnav-en">uvicorn</span><span class="xnav-ja">ASGIの受付ホール</span></a></div></div><div class="xnav-cat"><div class="xnav-ch"><i style="background:#7b5cff"></i>通信プロトコル</div><div class="xnav-grid"><a class="xnav-card" href="soap.html"><span class="xnav-en">SOAP &amp; WSDL</span><span class="xnav-ja">XMLの郵便</span></a><a class="xnav-card" href="grpc.html"><span class="xnav-en">gRPC</span><span class="xnav-ja">型付きの直通電話</span></a><a class="xnav-card" href="hls.html"><span class="xnav-en">HLS</span><span class="xnav-ja">動画の細切れ出前</span></a></div></div><div class="xnav-cat"><div class="xnav-ch"><i style="background:#e0606a"></i>ネットワーク</div><div class="xnav-grid"><a class="xnav-card" href="socket.html"><span class="xnav-en">Socket</span><span class="xnav-ja">通信の土台・電話線</span></a><a class="xnav-card" href="websocket.html"><span class="xnav-en">WebSocket</span><span class="xnav-ja">双方向ホットライン</span></a><a class="xnav-card" href="sse.html"><span class="xnav-en">SSE</span><span class="xnav-ja">一方通行の実況中継</span></a><a class="xnav-card" href="webrtc.html"><span class="xnav-en">WebRTC</span><span class="xnav-ja">仲介人とP2P直結</span></a><a class="xnav-card" href="cors.html"><span class="xnav-en">CORS</span><span class="xnav-ja">他オリジンの出入国審査</span></a></div></div></nav></body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>動く教科書</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;min-width:0}
+  html{overflow-x:hidden;width:100%}
+
+  /* ===== シェル共通 ===== */
+  body{background:#f5f6f8;color:#1d2330;font-family:'Inter','Hiragino Kaku Gothic ProN',sans-serif;line-height:1.75;width:100%;overflow-x:hidden;margin:0;}
+
+  .page{display:none;min-height:100vh;width:100%;max-width:960px;margin:0 auto;padding:clamp(18px,5vw,48px) clamp(14px,5vw,40px);}
+  .page.active{display:block;}
+
+  /* 戻るボタン（目次以外のページ用） */
+  .back-btn{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d6675;text-decoration:none;margin-bottom:22px;padding:6px 12px;border:1px solid #e6e9ee;border-radius:8px;background:#fff;cursor:pointer;transition:.14s;border:1px solid #e6e9ee;}
+  .back-btn:hover{color:#1d2330;border-color:#cfd4dd;}
+
+  /* ===== 目次ページ ===== */
+  #page-index .kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#6b7280;margin-bottom:10px;}
+  #page-index h1{font-size:clamp(28px,6.5vw,46px);font-weight:700;line-height:1.1;margin-bottom:8px;letter-spacing:-.02em;}
+  #page-index .lede{color:#5d6675;font-size:15px;max-width:60ch;margin-bottom:26px;}
+  #page-index .search{display:block;width:100%;background:#fff;border:2px solid #dfe3ea;color:#1d2330;font-family:'Inter',sans-serif;font-size:16px;padding:12px 16px;border-radius:12px;margin-bottom:10px;transition:.15s;}
+  #page-index .search::placeholder{color:#9aa3b2;}
+  #page-index .search:focus{outline:none;border-color:#1d2330;}
+  #page-index .count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9aa3b2;margin-bottom:28px;}
+  #page-index .cat{margin-bottom:30px;}
+  #page-index .cat-h{font-size:14px;font-weight:700;margin-bottom:13px;display:flex;align-items:center;gap:9px;color:#1d2330;}
+  #page-index .cat-h .pin{width:12px;height:12px;border-radius:3px;flex:0 0 auto;}
+  #page-index .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;width:100%;}
+  #page-index .card{display:block;background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:16px 17px;cursor:pointer;transition:.16s ease;min-width:0;max-width:100%;box-shadow:0 1px 3px rgba(20,30,50,.06);}
+  #page-index .card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(20,30,50,.12);border-color:#d2d7e0;}
+  #page-index .card.wip{opacity:.4;cursor:default;pointer-events:none;}
+  #page-index .card .ic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:16px;color:#fff;margin-bottom:11px;}
+  #page-index .card .en{font-size:15px;font-weight:600;margin-bottom:2px;display:block;color:#1d2330;letter-spacing:-.01em;overflow-wrap:break-word;}
+  #page-index .card .ja{font-size:12.5px;color:#5d6675;overflow-wrap:break-word;}
+  #page-index .card .wip-badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9aa3b2;border:1px solid #e6e9ee;border-radius:4px;padding:1px 6px;margin-top:4px;}
+  #page-index footer{margin-top:38px;font-size:11.5px;color:#9aa3b2;font-family:'IBM Plex Mono',monospace;border-top:1px solid #e6e9ee;padding-top:18px;}
+  @media(max-width:560px){#page-index .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;} #page-index .card{padding:13px;} #page-index .card .en{font-size:14px;} #page-index .card .ic{width:32px;height:32px;font-size:14px;}}
+  @media(max-width:380px){#page-index .grid{grid-template-columns:1fr;}}
+
+  /* ===== 個別ページ共通スタイル ===== */
+  .p-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;margin-bottom:10px;}
+  .p-h1{font-size:clamp(26px,6vw,42px);font-weight:700;line-height:1.14;letter-spacing:-.02em;}
+  .p-h1 .en{display:block;font-family:'IBM Plex Mono',monospace;font-size:.4em;color:#9aa3b2;font-weight:500;margin-top:8px;}
+  .p-lede{color:#5d6675;font-size:clamp(14px,2.2vw,16px);max-width:60ch;margin:16px 0 34px;}
+  .p-lede b{color:#1d2330;font-weight:600;}
+  .p-section{margin-bottom:40px;}
+  .p-h2{font-size:18px;font-weight:700;margin-bottom:6px;display:flex;gap:10px;align-items:baseline;letter-spacing:-.01em;}
+  .p-h2 .num{font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .p-h2+p{color:#5d6675;font-size:14px;margin-bottom:16px;}
+  .p-stage{background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:20px 16px 14px;overflow:hidden;}
+  .p-stage svg{display:block;width:100%;height:auto;overflow:visible;}
+  .p-controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:14px;}
+  .p-btn{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#1d2330;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;transition:.13s;}
+  .p-btn:hover{opacity:.85;transform:translateY(-1px);}
+  .p-btn.ghost{background:transparent;color:#1d2330;border:1px solid #e6e9ee;}
+  .p-btn.ghost:hover{border-color:#cfd4dd;}
+  .p-status{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9aa3b2;margin-left:auto;}
+  .p-note{border-left:3px solid currentColor;padding:6px 0 6px 15px;font-size:14px;margin-top:16px;color:#1d2330;}
+  .p-note b{font-weight:700;}
+  .p-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;}
+  @media(max-width:560px){.p-two{grid-template-columns:1fr;}}
+  .p-ccard{background:#fff;border:1px solid #e6e9ee;border-radius:10px;padding:15px;}
+  .p-ccard h3{font-family:'IBM Plex Mono',monospace;font-size:12.5px;margin-bottom:5px;}
+  .p-ccard p{font-size:13px;color:#5d6675;}
+  .p-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;margin-top:12px;color:#5d6675;}
+  .p-legend i{display:inline-block;width:20px;height:3px;vertical-align:middle;margin-right:5px;}
+  .p-panel{display:flex;flex-wrap:wrap;gap:8px;padding:14px;border-top:1px solid #e6e9ee;background:#fafbfc;align-items:center;}
+  .p-panel .lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9aa3b2;margin-right:2px;}
+  .p-sel{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#fff;color:#1d2330;border:1px solid #e6e9ee;padding:9px 13px;border-radius:8px;cursor:pointer;transition:.12s;}
+  .p-sel:hover{transform:translateY(-1px);}
+  .p-sel.chosen{font-weight:600;}
+  .p-verdict{font-family:'IBM Plex Mono',monospace;font-size:13px;padding:12px 16px;border-top:1px solid #e6e9ee;min-height:46px;color:#5d6675;}
+  .p-verdict b{color:#1d2330;}
+  .p-footer{margin-top:44px;font-size:11px;color:#9aa3b2;font-family:'IBM Plex Mono',monospace;border-top:1px solid #e6e9ee;padding-top:16px;}
+</style>
+</head>
+<body>
+<div class="page active" id="page-index">
+  <p class="kicker">Interactive explainers</p>
+  <h1>動く教科書</h1>
+  <p class="lede">技術トピックを、動かして理解するための解説集。</p>
+  <input type="text" class="search" id="search" placeholder="検索…（例: DTW, ソケット, CORS）" autocomplete="off">
+  <p class="count" id="count"></p>
+  <div id="catalog"></div>
+  <footer>カードをタップするとその項目の解説ページを開きます。</footer>
+</div>
+<script>
+var CAT_COLOR = { "データ・機械学習":"#4f7cff", "Python・API":"#11a06f", "通信プロトコル":"#7b5cff", "ネットワーク":"#e0606a" };
+var ITEMS = [
+  { page:"dtw",           en:"DTW",           ja:"波形を伸縮させて重ねる",   cat:"データ・機械学習", tags:"time series 時系列 波形", done:true },
+  { page:"dtree",         en:"Decision Tree", ja:"質問で枝分かれする道",     cat:"データ・機械学習", tags:"決定木 分類", done:true },
+  { page:"forest",        en:"Random Forest", ja:"木々の多数決",             cat:"データ・機械学習", tags:"ランダムフォレスト アンサンブル", done:true },
+  { page:"pydantic",      en:"Pydantic",      ja:"データの関所",             cat:"Python・API",     tags:"validation 検証 型 fastapi", done:true },
+  { page:"openapi",       en:"OpenAPI",       ja:"APIのメニュー表",          cat:"Python・API",     tags:"swagger api ドキュメント", done:true },
+  { page:"uvicorn",       en:"uvicorn",       ja:"ASGIの受付ホール",         cat:"Python・API",     tags:"asgi 非同期 サーバー", done:true },
+  { page:"soap",          en:"SOAP & WSDL",   ja:"XMLの郵便",               cat:"通信プロトコル",   tags:"xml web service", done:true },
+  { page:"grpc",          en:"gRPC",          ja:"型付きの直通電話",         cat:"通信プロトコル",   tags:"protobuf http2 rpc", done:true },
+  { page:"hls",           en:"HLS",           ja:"動画の細切れ出前",         cat:"通信プロトコル",   tags:"streaming 動画 abr", done:true },
+  { page:"socket",        en:"Socket",        ja:"通信の土台・電話線",       cat:"ネットワーク",     tags:"tcp udp ハンドシェイク", done:true },
+  { page:"websocket",     en:"WebSocket",     ja:"双方向ホットライン",       cat:"ネットワーク",     tags:"全二重 リアルタイム", done:true },
+  { page:"sse",           en:"SSE",           ja:"一方通行の実況中継",       cat:"ネットワーク",     tags:"server sent events", done:true },
+  { page:"webrtc",        en:"WebRTC",        ja:"仲介人とP2P直結",          cat:"ネットワーク",     tags:"p2p stun ice", done:true },
+  { page:"cors",          en:"CORS",          ja:"他オリジンの出入国審査",   cat:"ネットワーク",     tags:"オリジン セキュリティ プリフライト", done:true }
+];
+
+var catalog = document.getElementById('catalog');
+var searchEl = document.getElementById('search');
+var countEl = document.getElementById('count');
+
+function renderIndex(filter) {
+  filter = (filter||'').toLowerCase().trim();
+  catalog.innerHTML = '';
+  var order=[], byCat={}, shown=0, i;
+  for (i=0;i<ITEMS.length;i++) {
+    var it=ITEMS[i];
+    var hay=(it.en+' '+it.ja+' '+(it.tags||'')+' '+it.cat).toLowerCase();
+    if (filter && hay.indexOf(filter)===-1) continue;
+    if (!byCat[it.cat]) { byCat[it.cat]=[]; order.push(it.cat); }
+    byCat[it.cat].push(it);
+  }
+  for (var c=0;c<order.length;c++) {
+    var cat=order[c], col=CAT_COLOR[cat]||'#8893a5';
+    var sec=document.createElement('div'); sec.className='cat';
+    var h=document.createElement('div'); h.className='cat-h';
+    h.innerHTML='<span class="pin" style="background:'+col+'"></span>'+cat;
+    sec.appendChild(h);
+    var grid=document.createElement('div'); grid.className='grid';
+    for (var j=0;j<byCat[cat].length;j++) {
+      var it2=byCat[cat][j];
+      var card=document.createElement('div');
+      card.className='card'+(it2.done?'':' wip');
+      card.innerHTML='<div class="ic" style="background:'+col+'">'+it2.en.charAt(0).toUpperCase()+'</div><span class="en">'+it2.en+'</span><span class="ja">'+it2.ja+'</span>'+(it2.done?'':'<span class="wip-badge">準備中</span>');
+      if (it2.done) { (function(pid){ card.onclick=function(){location.href='pages/'+pid+'.html';}; })(it2.page); }
+      grid.appendChild(card); shown++;
+    }
+    sec.appendChild(grid); catalog.appendChild(sec);
+  }
+  countEl.textContent = shown+' / '+ITEMS.length+' 項目';
+}
+searchEl.addEventListener('input', function(){ renderIndex(searchEl.value); });
+renderIndex('');
+
+</script>
+</body>
+</html>
