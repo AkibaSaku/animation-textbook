@@ -90,7 +90,7 @@
   <footer>カードをタップするとその項目の解説ページを開きます。</footer>
 </div>
 <script>
-var CAT_COLOR = { "データ・機械学習":"#4f7cff", "Python・API":"#11a06f", "通信プロトコル":"#7b5cff", "ネットワーク":"#e0606a" };
+var CAT_COLOR = { "データ・機械学習":"#4f7cff", "Python・API":"#11a06f", "通信プロトコル":"#7b5cff", "ネットワーク":"#e0606a", "ハードウェア通信":"#d9820a" };
 var ITEMS = [
   { page:"dtw",           en:"DTW",           ja:"波形を伸縮させて重ねる",   cat:"データ・機械学習", tags:"time series 時系列 波形", done:true },
   { page:"dtree",         en:"Decision Tree", ja:"質問で枝分かれする道",     cat:"データ・機械学習", tags:"決定木 分類", done:true },
@@ -105,7 +105,10 @@ var ITEMS = [
   { page:"websocket",     en:"WebSocket",     ja:"双方向ホットライン",       cat:"ネットワーク",     tags:"全二重 リアルタイム", done:true },
   { page:"sse",           en:"SSE",           ja:"一方通行の実況中継",       cat:"ネットワーク",     tags:"server sent events", done:true },
   { page:"webrtc",        en:"WebRTC",        ja:"仲介人とP2P直結",          cat:"ネットワーク",     tags:"p2p stun ice", done:true },
-  { page:"cors",          en:"CORS",          ja:"他オリジンの出入国審査",   cat:"ネットワーク",     tags:"オリジン セキュリティ プリフライト", done:true }
+  { page:"cors",          en:"CORS",          ja:"他オリジンの出入国審査",   cat:"ネットワーク",     tags:"オリジン セキュリティ プリフライト", done:true },
+  { page:"p2p",           en:"P2P",           ja:"サーバー無しの相互接続",   cat:"ネットワーク",     tags:"peer to peer 分散 dht bittorrent メッシュ", done:true },
+  { page:"uart",          en:"UART",          ja:"調歩式シリアルの対話",     cat:"ハードウェア通信", tags:"serial シリアル rs232 調歩同期 tx rx baud ボーレート", done:true },
+  { page:"spi",           en:"SPI",           ja:"クロック同期の4本線",      cat:"ハードウェア通信", tags:"mosi miso sclk クロック 同期 バス 全二重", done:true }
 ];
 
 var catalog = document.getElementById('catalog');
